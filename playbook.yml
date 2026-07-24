@@ -1,6 +1,0 @@
-- name: Развертывание локального веб-окружения с базовой защитой
-  hosts: localhost # 127.0.0.1
-  become: true # использовать sudo
-  gather_facts: true
-  roles:
-    - web_env
