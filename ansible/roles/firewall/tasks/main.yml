@@ -4,7 +4,7 @@
     msg:
       - "Цель: реализовать Zero Trust — запрещено всё, что не разрешено явно"
       - "Используется ufw (Uncomplicated Firewall) через ansible.builtin.command"
-      - "Стратегия: default deny incoming, default allow outgoing, открыть только SSH"
+      - "Стратегия: default deny incoming, default allow outgoing, открыть SSH + HTTP/HTTPS"
   tags: firewall
 
 - name: "[FIREWALL] Установка пакета ufw"
@@ -37,7 +37,7 @@
 
 - name: "[FIREWALL] Открытие порта SSH"
   ansible.builtin.debug:
-    msg: "Разрешаем входящие TCP-соединения на порт {{ ssh_port | default(22) }} — только это и будет разрешено"
+    msg: "Разрешаем входящие TCP-соединения на порт {{ ssh_port | default(22) }}"
   tags: firewall
 
 - name: ufw allow SSH on configured port
@@ -45,12 +45,27 @@
   changed_when: false
   tags: firewall
 
+- name: "[FIREWALL] Открытие портов веб-сервера (80, 443)"
+  ansible.builtin.debug:
+    msg: "Разрешаем HTTP (80) и HTTPS (443) для входящего веб-трафика"
+  tags: firewall
+
+- name: ufw allow HTTP
+  ansible.builtin.command: ufw allow 80/tcp
+  changed_when: false
+  tags: firewall
+
+- name: ufw allow HTTPS
+  ansible.builtin.command: ufw allow 443/tcp
+  changed_when: false
+  tags: firewall
+
 - name: "[FIREWALL] Включение ufw"
   ansible.builtin.debug:
     msg:
       - "Включение ufw активирует все правила"
-      - "С этого момента ВСЁ, кроме SSH на порту {{ ssh_port | default(22) }}, будет заблокировано"
-      - "Это и есть Zero Trust: явно разрешено только то, что необходимо"
+      - "Разрешены: SSH ({{ ssh_port | default(22) }}), HTTP (80), HTTPS (443)"
+      - "Всё остальное заблокировано — Zero Trust"
   tags: firewall
 
 - name: ufw enable
@@ -64,6 +79,6 @@
       - "✓ ufw включён"
       - "✓ Incoming: DENY (по умолчанию)"
       - "✓ Outgoing: ALLOW (по умолчанию)"
-      - "✓ Разрешён только SSH (порт {{ ssh_port | default(22) }})"
+      - "✓ Разрешены: SSH (порт {{ ssh_port | default(22) }}), HTTP (80), HTTPS (443)"
       - "✓ Концепция Zero Trust реализована"
   tags: firewall

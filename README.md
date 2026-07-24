@@ -34,28 +34,26 @@ bash gen_self_signed_cert.sh
 
 ---
 
-## Известная проблема: UFW + Docker
+<!-- ## Известная проблема: UFW + Docker -->
 
-Docker публикует порты через собственные правила iptables в обход UFW. Поэтому порты 80, 443, 3000 (Grafana), 3100 (Loki) доступны извне, даже если ufw настроен на `default deny incoming`.
+<!-- Docker публикует порты через собственные правила iptables в обход UFW. Поэтому порты 80, 443 доступны извне, даже если ufw настроен на `default deny incoming`. -->
 
-**`"iptables": false` в `/etc/docker/daemon.json` не подходит** — без iptables у Docker ломается сетевая изоляция контейнеров и маршрутизация к внешним сетям.
+<!-- **Решение** — использовать цепочку `DOCKER-USER` (её правила обрабатываются до правил Docker): -->
 
-**Решение** — использовать цепочку `DOCKER-USER` (её правила обрабатываются до правил Docker):
+<!-- ```bash -->
+<!-- # Запретить весь входящий трафик к опубликованным портам Docker (кроме localhost) -->
+<!-- iptables -I DOCKER-USER -i eth0 -m conntrack --ctstate NEW -j DROP -->
 
-```bash
-# Запретить весь входящий трафик к опубликованным портам Docker (кроме localhost)
-iptables -I DOCKER-USER -i eth0 -m conntrack --ctstate NEW -j DROP
+<!-- # Разрешить только нужные порты -->
+<!-- iptables -I DOCKER-USER -i eth0 -p tcp --dport 80 -j ACCEPT -->
+<!-- iptables -I DOCKER-USER -i eth0 -p tcp --dport 443 -j ACCEPT -->
+<!-- ``` -->
 
-# Разрешить только нужные порты
-iptables -I DOCKER-USER -i eth0 -p tcp --dport 80 -j ACCEPT
-iptables -I DOCKER-USER -i eth0 -p tcp --dport 443 -j ACCEPT
-```
+<!-- Либо заблокировать служебные порты (Grafana, Loki) с localhost: -->
 
-Либо заблокировать служебные порты (Grafana, Loki) с localhost:
+<!-- ```bash -->
+<!-- iptables -I DOCKER-USER -i eth0 ! -s 127.0.0.1 -p tcp --dport 3000 -j DROP -->
+<!-- iptables -I DOCKER-USER -i eth0 ! -s 127.0.0.1 -p tcp --dport 3100 -j DROP -->
+<!-- ``` -->
 
-```bash
-iptables -I DOCKER-USER -i eth0 ! -s 127.0.0.1 -p tcp --dport 3000 -j DROP
-iptables -I DOCKER-USER -i eth0 ! -s 127.0.0.1 -p tcp --dport 3100 -j DROP
-```
-
-Правила не сбрасываются при перезапуске Docker. Можно оформить как Ansible-таск или systemd-юнит для автоматизации.
+<!-- Правила не сбрасываются при перезапуске Docker. Можно оформить как Ansible-таск или systemd-юнит для автоматизации. -->
