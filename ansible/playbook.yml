@@ -1,15 +1,20 @@
 ---
 - name: Harden SSH, configure firewall, and create users
-  hosts: all
+  hosts: localhost         # Строго localhost вместо all
   connection: local
-  become: true
-  gather_facts: true
+  become: false            # Отключаем глобальный become на старте
+  gather_facts: false      # Отключаем автоматический сбор фактов
 
   vars:
     ssh_port: 22
     ansible_managed: "Ansible managed: {file} modified on %Y-%m-%d"
 
   pre_tasks:
+    # 1. Безопасно собираем факты БЕЗ sudo
+    - name: "Безопасный сбор фактов"
+      ansible.builtin.setup:
+
+    # 2. Теперь включаем become только для вывода логотипа и логов, если нужно (или оставляем false)
     - name: "======================================================"
       ansible.builtin.debug:
         msg:
@@ -17,18 +22,10 @@
           - "  S     H   H       F       I   R   R  E    W   W  A   A  L      L      "
           - "  SSSS  HHHHH       FFFF    I   RRRR   EEE  W W W  AAAAA  L      L      "
           - "      S H   H       F       I   R  R   E    W W W  A   A  L      L      "
-          - "  SSSS  H   H       F      III  R   R  EEEE  W W  A   A  LLLLL  LLLLL  "
+          - "  SSSS  H   H       F      III  R   R  Eeee  W W  A   A  LLLLL  LLLLL  "
           - ""
           - "  🛡️  Применение конфигурации безопасности сервера"
           - "  ═══════════════════════════════════════════════"
-          - ""
-          - "  Роли:"
-          - "    1. ssh-hardening — отключение паролей, запрет root, ключи"
-          - "    2. firewall      — ufw с Zero Trust (запрещено всё, кроме SSH)"
-          - "    3. users         — создание admin-user (sudo) и deploy-user"
-          - ""
-          - "  Целевой хост: {{ inventory_hostname }}"
-          - "  SSH порт:      {{ ssh_port }}"
       tags: always
 
     - name: "Сбор фактов о системе"
@@ -40,24 +37,18 @@
           - "Хостнейм: {{ ansible_hostname }}"
       tags: always
 
+  # Включаем become индивидуально для ролей, которым нужны root-права
   roles:
-    - ssh-hardening
-    - firewall
-    - users
+    - role: ssh-hardening
+      become: true
+    - role: firewall
+      become: true
+    - role: users
+      become: true
 
   post_tasks:
     - name: "======================================================"
       ansible.builtin.debug:
         msg:
           - "  ✅  ПЛЕЙБУК УСПЕШНО ЗАВЕРШЁН  ✅"
-          - ""
-          - "  Итог:"
-          - "  • SSH: парольный вход отключён, root запрещён, только ключи"
-          - "  • Фаервол: ufw активен, Zero Trust (закрыто всё, кроме SSH)"
-          - "  • Пользователи: admin-user (sudo), deploy-user созданы"
-          - ""
-          - "  ⚠  НЕ ЗАКРЫВАЙТЕ ТЕКУЩУЮ SSH-СЕССИЮ, пока не проверите:"
-          - "     ssh -i roles/users/files/admin-key admin-user@localhost"
-          - ""
-          - "  Если что-то пошло не так — исправьте и запустите плейбук снова."
       tags: always
