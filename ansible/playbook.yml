@@ -6,6 +6,7 @@
 
   vars:
     ssh_port: 22
+    ansible_managed: "Ansible managed: {file} modified on %Y-%m-%d"
 
   pre_tasks:
     - name: "======================================================"
