@@ -10,23 +10,6 @@ ansible-galaxy collection install -r ansible/requirements.yml
 cd ansible && ansible-playbook playbook.yml --ask-become-pass && cd .. && docker compose up
 ```
 
-## Что делает плейбук
-
-| Роль | Действие |
-|---|---|
-| `ssh-hardening` | Отключает `PasswordAuthentication`, `PermitRootLogin`, включает вход только по ключам на порту `22` |
-| `firewall` | Включает `ufw` с **Zero Trust** (запрещено всё входящее, разрешён только SSH) |
-| `users` | Создаёт `admin-user` (с sudo) и `deploy-user` — оба входят **только** по SSH-ключу |
-
-## Файлы ключей
-
-Сгенерированные открытые ключи должны лежать в `ansible/roles/users/files/`:
-
-- `admin-key.pub` — публичный ключ для `admin-user`
-- `deploy-key.pub` — публичный ключ для `deploy-user`
-
-Приватные ключи (`admin-key`, `deploy-key`) также попадают в ту же папку. Храните их в безопасности.
-
 ## Смена порта SSH
 
 ```bash
