@@ -94,11 +94,6 @@
       - "admin-key.pub exists: {{ admin_key_stat.stat.exists | default('UNKNOWN') }}"
       - "deploy-key.pub exists: {{ deploy_key_stat.stat.exists | default('UNKNOWN') }}"
   tags: users
-  ansible.builtin.debug:
-    msg:
-      - "Если ключи найдены — они будут добавлены в ~/.ssh/authorized_keys"
-      - "Это единственный способ входа (PasswordAuthentication отключён в ssh-hardening)"
-  tags: users
   when: admin_key_stat.stat.exists or deploy_key_stat.stat.exists
 
 - name: Install SSH public key for admin-user
