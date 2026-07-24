@@ -1,7 +1,6 @@
 ---
 - name: Harden SSH, configure firewall, and create users
   hosts: all
-  connection: local
   become: true
   gather_facts: true
 
