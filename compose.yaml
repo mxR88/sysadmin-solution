@@ -12,10 +12,6 @@ services:
       POSTGRES_DB: app_db
     expose:
       - "5432"
-    # ports:
-      # - "127.0.0.1:5432:5432"  # Listen only on localhost
-      # Должно быть доступно только веб-серверу
-      # (поэтому можно использовал внутреннюю сеть докера с именами контейнеров вместо доменов)
     volumes:
       - postgres_data:/var/lib/postgresql/18/data
     healthcheck:
@@ -23,6 +19,8 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - app_network
 
   nginx:
     image: nginx:alpine
@@ -42,6 +40,8 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
+    networks:
+      - app_network
 
   apache:
     build: ./apache
@@ -59,10 +59,8 @@ services:
       - APACHE_RUN_GROUP=www-data
     depends_on:
       - postgres
-    # networks:
-      # - app_network
-    # Only accept requests from nginx (internal network)
-    # Apache listens on port 80 inside container
+    networks:
+      - app_network
 
   # ==== logging
 
@@ -77,8 +75,8 @@ services:
       - GF_INSTALL_PLUGINS=grafana-piechart-panel
     volumes:
       - grafana_data:/var/lib/grafana
-    # networks:
-      # - app_network
+    networks:
+      - app_network
 
   loki:
     image: grafana/loki:latest
@@ -90,8 +88,8 @@ services:
     volumes:
       - ./loki-config.yaml:/etc/loki/local-config.yaml:ro
       - loki_data:/loki
-    # networks:
-      # - app_network
+    networks:
+      - app_network
 
   promtail:
     image: grafana/promtail:latest
@@ -103,10 +101,18 @@ services:
       - /var/lib/docker/containers:/var/lib/docker/containers:ro
       # - ./app/logs:/var/log/app:ro  # Optional: if you mount app logs
     command: -config.file=/etc/promtail/config.yaml
-    # networks:
-      # - app_network
+    networks:
+      - app_network
     
 volumes:
   postgres_data:
   loki_data:
   grafana_data:
+
+networks:
+  app_network:
+    driver: bridge
+    name: app_network
+    ipam:
+      config:
+        - subnet: 172.28.0.0/16
