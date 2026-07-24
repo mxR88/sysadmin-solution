@@ -39,5 +39,27 @@ services:
       timeout: 10s
       retries: 3
 
+  apache:
+    image: php:8.3-apache
+    container_name: apache_app
+    restart: unless-stopped
+    expose:
+      - "80"  # Internal only, not exposed to host
+    volumes:
+      - ./app:/var/www/html
+      - ./apache/apache.conf:/etc/apache2/sites-available/000-default.conf:ro
+      - ./apache/ports.conf:/etc/apache2/ports.conf:ro
+    environment:
+      # PRODUCTION: Use secrets or .env
+      - APACHE_RUN_USER=www-data
+      - APACHE_RUN_GROUP=www-data
+    depends_on:
+      - postgres
+    # networks:
+      # - app_network
+    # Only accept requests from nginx (internal network)
+    # Apache listens on port 80 inside container
+
+    
 volumes:
   postgres_data:
