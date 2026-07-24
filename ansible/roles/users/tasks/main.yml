@@ -112,25 +112,25 @@
   when: deploy_key_stat.stat.exists
   tags: users
 
-- name: "[USERS] ПРЕДУПРЕЖДЕНИЕ: admin-key.pub не найден"
-  ansible.builtin.debug:
-    msg:
-      - "⚠ Файл admin-key.pub не найден!"
-      - "Сгенерируйте ключи вручную:"
-      - "  ssh-keygen -t ed25519 -f roles/users/files/admin-key -N '' -C 'admin-user@$(hostname)'"
-      - "После этого запустите плейбук снова."
-  when: not admin_key_stat.stat.exists
-  tags: users
+# - name: "[USERS] ПРЕДУПРЕЖДЕНИЕ: admin-key.pub не найден"
+#   ansible.builtin.debug:
+#     msg:
+#       - "⚠ Файл admin-key.pub не найден!"
+#       - "Сгенерируйте ключи вручную:"
+#       - "  ssh-keygen -t ed25519 -f roles/users/files/admin-key -N '' -C 'admin-user@$(hostname)'"
+#       - "После этого запустите плейбук снова."
+#   when: not admin_key_stat.stat.exists
+#   tags: users
 
-- name: "[USERS] ПРЕДУПРЕЖДЕНИЕ: deploy-key.pub не найден"
-  ansible.builtin.debug:
-    msg:
-      - "⚠ Файл deploy-key.pub не найден!"
-      - "Сгенерируйте ключи вручную:"
-      - "  ssh-keygen -t ed25519 -f roles/users/files/deploy-key -N '' -C 'deploy-user@$(hostname)'"
-      - "После этого запустите плейбук снова."
-  when: not deploy_key_stat.stat.exists
-  tags: users
+# - name: "[USERS] ПРЕДУПРЕЖДЕНИЕ: deploy-key.pub не найден"
+#   ansible.builtin.debug:
+#     msg:
+#       - "⚠ Файл deploy-key.pub не найден!"
+#       - "Сгенерируйте ключи вручную:"
+#       - "  ssh-keygen -t ed25519 -f roles/users/files/deploy-key -N '' -C 'deploy-user@$(hostname)'"
+#       - "После этого запустите плейбук снова."
+#   when: not deploy_key_stat.stat.exists
+#   tags: users
 
 - name: "[USERS] Настройка sudo для admin-user"
   ansible.builtin.debug:
