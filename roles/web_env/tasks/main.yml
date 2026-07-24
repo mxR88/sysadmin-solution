@@ -1,0 +1,14 @@
+- name: Установить Docker и Docker Compose
+  apt:
+    name:
+      - docker
+      - docker-compose
+    state: present
+  become: true
+
+- name: Запустить и включить Docker
+  systemd:
+    name: docker
+    state: started
+    enabled: yes
+  become: true
