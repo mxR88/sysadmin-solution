@@ -10,7 +10,7 @@ cd ansible && sudo ansible-playbook playbook.yml && cd .. && docker compose up
 ## Смена порта SSH
 
 ```bash
-cd ansible && ansible-playbook playbook.yml --ask-become-pass -e ssh_port=2222
+cd ansible && sudo ansible-playbook playbook.yml -e ssh_port=2222
 ```
 
 <!-- ## Проверка правил фаервола -->
