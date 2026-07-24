@@ -2,19 +2,75 @@
 - name: "[DOCKER] ====== НАЧАЛО: Роль docker ======"
   ansible.builtin.debug:
     msg:
-      - "Цель: установить Docker Engine и Docker Compose plugin"
+      - "Цель: установить Docker Engine и Compose из официального репозитория"
       - "Пользователь admin-user будет добавлен в группу docker"
   tags: docker
 
-- name: "[DOCKER] Установка пакетов docker.io и docker-compose-plugin"
+- name: "[DOCKER] Установка зависимостей для добавления репозитория"
   ansible.builtin.debug:
-    msg: "Выполняется apt install docker.io docker-compose-plugin — движок контейнеров и плагин Compose v2"
+    msg: "Устанавливаем ca-certificates, curl — нужны для импорта GPG-ключа Docker"
   tags: docker
 
-- name: Ensure Docker is installed
+- name: Install prerequisites
   ansible.builtin.apt:
     name:
-      - docker.io
+      - ca-certificates
+      - curl
+    state: present
+    update_cache: true
+  tags: docker
+
+- name: "[DOCKER] Создание директории /etc/apt/keyrings"
+  ansible.builtin.debug:
+    msg: "Создаём /etc/apt/keyrings для хранения GPG-ключа Docker"
+  tags: docker
+
+- name: Create keyrings directory
+  ansible.builtin.file:
+    path: /etc/apt/keyrings
+    state: directory
+    mode: "0755"
+  tags: docker
+
+- name: "[DOCKER] Импорт GPG-ключа Docker"
+  ansible.builtin.debug:
+    msg: "Скачиваем и сохраняем официальный GPG-ключ Docker в /etc/apt/keyrings/docker.asc"
+  tags: docker
+
+- name: Add Docker GPG key
+  ansible.builtin.get_url:
+    url: https://download.docker.com/linux/ubuntu/gpg
+    dest: /etc/apt/keyrings/docker.asc
+    mode: "0644"
+  tags: docker
+
+- name: "[DOCKER] Добавление официального APT-репозитория Docker"
+  ansible.builtin.debug:
+    msg:
+      - "Добавляем https://download.docker.com/linux/ubuntu как источник пакетов"
+      - "Кодировка: {{ ansible_distribution_release | default('noble') }}"
+  tags: docker
+
+- name: Add Docker APT repository
+  ansible.builtin.apt_repository:
+    repo: "deb [arch={{ 'amd64' if ansible_architecture == 'x86_64' else ansible_architecture }} signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release | default('noble') }} stable"
+    state: present
+    filename: docker
+    update_cache: true
+  tags: docker
+
+- name: "[DOCKER] Установка Docker Engine и плагинов"
+  ansible.builtin.debug:
+    msg: "Устанавливаем docker-ce, docker-ce-cli, containerd.io, docker-buildx-plugin, docker-compose-plugin"
+  tags: docker
+
+- name: Install Docker packages
+  ansible.builtin.apt:
+    name:
+      - docker-ce
+      - docker-ce-cli
+      - containerd.io
+      - docker-buildx-plugin
       - docker-compose-plugin
     state: present
     update_cache: true
@@ -47,7 +103,7 @@
 - name: "[DOCKER] ====== ИТОГО: Роль docker завершена ======"
   ansible.builtin.debug:
     msg:
-      - "✓ docker.io установлен"
+      - "✓ docker-ce установлен из официального репозитория"
       - "✓ docker-compose-plugin установлен"
       - "✓ docker service запущен и добавлен в автозагрузку"
       - "✓ admin-user добавлен в группу docker"
