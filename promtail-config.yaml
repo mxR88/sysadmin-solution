@@ -1,0 +1,110 @@
+# promtail-config.yaml
+server:
+  http_listen_port: 9080
+  grpc_listen_port: 0
+
+positions:
+  filename: /tmp/positions.yaml
+
+clients:
+  - url: http://loki:3100/loki/api/v1/push
+
+scrape_configs:
+  # Nginx logs from Docker container
+  - job_name: nginx
+    docker_sd_configs:
+      - host: unix:///var/run/docker.sock
+        refresh_interval: 5s
+        filters:
+          - name: label
+            values: ["container_name=nginx_app"]
+    relabel_configs:
+      - source_labels: ['__meta_docker_container_name']
+        regex: '/(.*)'
+        target_label: 'container'
+      - source_labels: ['__meta_docker_container_label_com_docker_compose_service']
+        target_label: 'service'
+      - source_labels: ['__meta_docker_container_log_stream']
+        target_label: 'stream'
+      - source_labels: ['__meta_docker_container_log_stream']
+        regex: 'stdout'
+        replacement: 'access'
+        action: replace
+        target_label: 'log_type'
+      - source_labels: ['__meta_docker_container_log_stream']
+        regex: 'stderr'
+        replacement: 'error'
+        action: replace
+        target_label: 'log_type'
+      - source_labels: ['__meta_docker_container_log_stream']
+        regex: 'stdout'
+        replacement: 'nginx_access'
+        action: replace
+        target_label: 'job'
+      - source_labels: ['__meta_docker_container_log_stream']
+        regex: 'stderr'
+        replacement: 'nginx_error'
+        action: replace
+        target_label: 'job'
+
+  # Apache logs from Docker container
+  - job_name: apache
+    docker_sd_configs:
+      - host: unix:///var/run/docker.sock
+        refresh_interval: 5s
+        filters:
+          - name: label
+            values: ["container_name=apache_app"]
+    relabel_configs:
+      - source_labels: ['__meta_docker_container_name']
+        regex: '/(.*)'
+        target_label: 'container'
+      - source_labels: ['__meta_docker_container_label_com_docker_compose_service']
+        target_label: 'service'
+      - source_labels: ['__meta_docker_container_log_stream']
+        target_label: 'stream'
+      - source_labels: ['__meta_docker_container_log_stream']
+        regex: 'stdout'
+        replacement: 'apache_access'
+        action: replace
+        target_label: 'job'
+      - source_labels: ['__meta_docker_container_log_stream']
+        regex: 'stderr'
+        replacement: 'apache_error'
+        action: replace
+        target_label: 'job'
+
+  # Alternative: File-based scraping (if you mount log volumes)
+  - job_name: nginx_file
+    static_configs:
+      - targets: ['localhost']
+        labels:
+          job: 'nginx_access'
+          service: 'nginx'
+          __path__: '/var/log/app/nginx/*.log'
+    pipeline_stages:
+      - regex:
+          expression: '^(?P<ip>\S+) (?P<ident>\S+) (?P<user>\S+) \[(?P<time>.*?)\] "(?P<method>\S+) (?P<path>[^"]*) HTTP/\d\.\d" (?P<status>\d+) (?P<size>\d+) "(?P<referer>[^"]*)" "(?P<user_agent>[^"]*)"'
+      - labels:
+          ip: ip
+          method: method
+          status: status
+          path: path
+          user_agent: user_agent
+
+  - job_name: apache_file
+    static_configs:
+      - targets: ['localhost']
+        labels:
+          job: 'apache_access'
+          service: 'apache'
+          __path__: '/var/log/app/apache/*.log'
+    pipeline_stages:
+      - regex:
+          expression: '^(?P<ip>\S+) (?P<ident>\S+) (?P<user>\S+) \[(?P<time>.*?)\] "(?P<method>\S+) (?P<path>[^"]*) HTTP/\d\.\d" (?P<status>\d+) (?P<size>\d+) "(?P<referer>[^"]*)" "(?P<user_agent>[^"]*)"'
+      - labels:
+          ip: ip
+          method: method
+          status: status
+          path: path
+          user_agent: user_agent
