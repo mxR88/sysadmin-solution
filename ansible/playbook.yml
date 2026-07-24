@@ -2,15 +2,16 @@
 - name: Harden SSH, configure firewall, and create users
   hosts: localhost         # Строго localhost вместо all
   connection: local
-  become: true
-  gather_facts: false      # Явный setup в pre_tasks чтобы контролировать порядок
+  become: false            # Отключаем глобальный become на старте
+  gather_facts: false      # Отключаем автоматический сбор фактов
 
   vars:
     ssh_port: 22
     ansible_managed: "Ansible managed: {file} modified on %Y-%m-%d"
 
   pre_tasks:
-    - name: "Сбор фактов"
+    # 1. Безопасно собираем факты БЕЗ sudo
+    - name: "Безопасный сбор фактов"
       ansible.builtin.setup:
 
     # 2. Теперь включаем become только для вывода логотипа и логов, если нужно (или оставляем false)
@@ -36,10 +37,14 @@
           - "Хостнейм: {{ ansible_hostname }}"
       tags: always
 
+  # Включаем become индивидуально для ролей, которым нужны root-права
   roles:
-    - ssh-hardening
-    - firewall
-    - users
+    - role: ssh-hardening
+      become: true
+    - role: firewall
+      become: true
+    - role: users
+      become: true
 
   post_tasks:
     - name: "======================================================"
