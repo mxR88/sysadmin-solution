@@ -4,4 +4,22 @@
   
 ```
 
-<!-- ansible-playbook --syntax-check playbook.yml -->
+
+# Какие команды использовались:
+
+### Проверить синтаксис плейбука
+
+```
+ansible-playbook --syntax-check playbook.yml
+```
+
+### Сгенерировать самоподписанный сертификат
+
+```
+  # Create certs directory and generate self-signed cert valid for 365 days
+  mkdir -p ./certs && \
+  openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+    -keyout ./certs/self-signed.key \
+    -out ./certs/self-signed.crt \
+    -subj "/C=US/ST=State/L=City/O=Organization/CN=localhost"
+```

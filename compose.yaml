@@ -1,0 +1,43 @@
+services:
+  postgres:
+    image: postgres:18-alpine
+    container_name: postgres_app
+    restart: unless-stopped
+    environment:
+      # PRODUCTION: Use secrets or .env file instead of hardcoded values
+      POSTGRES_USER: app_user
+      POSTGRES_PASSWORD: changeme_secure_password_123
+      POSTGRES_DB: app_db
+    ports:
+      - "127.0.0.1:5432:5432"  # Listen only on localhost
+      # Должно быть доступно только веб-серверу
+      # (поэтому можно использовал внутреннюю сеть докера с именами контейнеров вместо доменов)
+    volumes:
+      - postgres_data:/var/lib/postgresql/18/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U app_user -d app_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  nginx:
+    image: nginx:alpine
+    container_name: nginx_app
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./default.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./certs:/etc/nginx/certs:ro
+      - ./static:/usr/share/nginx/html:ro  # Mount your static files
+    # Optional: add healthcheck
+    healthcheck:
+      test: ["CMD", "nginx", "-t"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+volumes:
+  postgres_data:
