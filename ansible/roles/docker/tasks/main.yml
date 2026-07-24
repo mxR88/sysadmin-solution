@@ -100,6 +100,18 @@
     append: true
   tags: docker
 
+- name: "[DOCKER] Добавление текущего пользователя в группу docker"
+  ansible.builtin.debug:
+    msg: "Пользователь {{ ansible_user_id }} тоже добавляется в группу docker, чтобы docker compose работал сразу"
+  tags: docker
+
+- name: Add current user to docker group
+  ansible.builtin.user:
+    name: "{{ ansible_user_id }}"
+    groups: docker
+    append: true
+  tags: docker
+
 - name: "[DOCKER] ====== ИТОГО: Роль docker завершена ======"
   ansible.builtin.debug:
     msg:
