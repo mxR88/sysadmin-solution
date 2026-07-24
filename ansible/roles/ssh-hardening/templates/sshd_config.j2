@@ -1,0 +1,35 @@
+# {{ ansible_managed }}
+# SSH server configuration — hardened for key-only access.
+
+Port {{ ssh_port | default(22) }}
+
+AddressFamily any
+ListenAddress 0.0.0.0
+ListenAddress ::
+
+# Crypto
+HostKey /etc/ssh/ssh_host_rsa_key
+HostKey /etc/ssh/ssh_host_ecdsa_key
+HostKey /etc/ssh/ssh_host_ed25519_key
+
+Ciphers chacha20-poly1305@openssh.com,aes256-gcm@openssh.com,aes128-gcm@openssh.com
+KexAlgorithms curve25519-sha256,diffie-hellman-group-exchange-sha256
+MACs hmac-sha2-512-etm@openssh.com,hmac-sha2-256-etm@openssh.com,umac-128-etm@openssh.com
+
+# Authentication
+PermitRootLogin no
+PubkeyAuthentication yes
+PasswordAuthentication no
+KbdInteractiveAuthentication no
+ChallengeResponseAuthentication no
+AuthenticationMethods publickey
+
+# Users
+AllowUsers admin-user deploy-user
+
+# Session
+UsePAM yes
+X11Forwarding no
+PrintMotd no
+AcceptEnv LANG LC_*
+Subsystem sftp /usr/lib/openssh/sftp-server

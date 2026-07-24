@@ -1,0 +1,60 @@
+---
+- name: "[SSH] ====== НАЧАЛО: Роль ssh-hardening ======"
+  ansible.builtin.debug:
+    msg:
+      - "Цель: заблокировать парольный вход, запретить root, оставить только ключи"
+      - "Проверяемые параметры: PasswordAuthentication, PermitRootLogin, AllowUsers"
+  tags: ssh
+
+- name: "[SSH] Установка пакета openssh-server"
+  ansible.builtin.debug:
+    msg: "Выполняется apt install openssh-server — сервер должен быть установлен для применения настроек"
+  tags: ssh
+
+- name: Ensure openssh-server is installed
+  ansible.builtin.apt:
+    name: openssh-server
+    state: present
+  tags: ssh
+
+- name: "[SSH] Деплой конфигурации sshd_config из шаблона"
+  ansible.builtin.debug:
+    msg:
+      - "Шаблон применяет следующие настройки:"
+      - "  • Port {{ ssh_port | default(22) }} — порт SSH"
+      - "  • PermitRootLogin no — запрет входа root"
+      - "  • PubkeyAuthentication yes — вход только по ключам"
+      - "  • PasswordAuthentication no — парольный вход отключён"
+      - "  • AuthenticationMethods publickey — только публичный ключ"
+      - "  • AllowUsers admin-user deploy-user — только эти пользователи"
+      - "Файл валидируется командой sshd -t перед сохранением."
+  tags: ssh
+
+- name: Deploy hardened sshd_config
+  ansible.builtin.template:
+    src: sshd_config.j2
+    dest: /etc/ssh/sshd_config
+    owner: root
+    group: root
+    mode: "0600"
+    validate: /usr/sbin/sshd -t -f %s
+  notify: restart sshd
+  tags: ssh
+
+- name: "[SSH] Применение изменений — перезапуск sshd"
+  ansible.builtin.debug:
+    msg: "Запуск handler'а restart sshd, если конфигурация изменилась"
+  tags: ssh
+
+- name: Ensure SSH config is applied
+  ansible.builtin.meta: flush_handlers
+  tags: ssh
+
+- name: "[SSH] ====== ИТОГО: Роль ssh-hardening завершена ======"
+  ansible.builtin.debug:
+    msg:
+      - "✓ PasswordAuthentication отключён"
+      - "✓ PermitRootLogin запрещён"
+      - "✓ PubkeyAuthentication включён"
+      - "✓ AllowUsers: admin-user, deploy-user"
+  tags: ssh

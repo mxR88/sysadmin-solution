@@ -1,0 +1,74 @@
+---
+- name: "[FIREWALL] ====== НАЧАЛО: Роль firewall ======"
+  ansible.builtin.debug:
+    msg:
+      - "Цель: реализовать Zero Trust — запрещено всё, что не разрешено явно"
+      - "Используется ufw (Uncomplicated Firewall)"
+      - "Стратегия: default deny incoming, default allow outgoing, открыть только SSH"
+  tags: firewall
+
+- name: "[FIREWALL] Установка пакета ufw"
+  ansible.builtin.debug:
+    msg: "Выполняется apt install ufw — утилита для управления nftables в Ubuntu"
+  tags: firewall
+
+- name: Ensure ufw is installed
+  ansible.builtin.apt:
+    name: ufw
+    state: present
+  tags: firewall
+
+- name: "[FIREWALL] Установка политик по умолчанию"
+  ansible.builtin.debug:
+    msg:
+      - "Входящие: DENY — все входящие соединения запрещены по умолчанию (Zero Trust)"
+      - "Исходящие: ALLOW — исходящие соединения разрешены (обновления, DNS и т.д.)"
+  tags: firewall
+
+- name: Set default policy — deny all incoming
+  community.general.ufw:
+    direction: incoming
+    policy: deny
+  tags: firewall
+
+- name: Set default policy — allow all outgoing
+  community.general.ufw:
+    direction: outgoing
+    policy: allow
+  tags: firewall
+
+- name: "[FIREWALL] Открытие порта SSH"
+  ansible.builtin.debug:
+    msg: "Разрешаем входящие TCP-соединения на порт {{ ssh_port | default(22) }} — только это и будет разрешено"
+  tags: firewall
+
+- name: Allow SSH on configured port
+  community.general.ufw:
+    rule: allow
+    port: "{{ ssh_port | default(22) }}"
+    proto: tcp
+  tags: firewall
+
+- name: "[FIREWALL] Включение ufw"
+  ansible.builtin.debug:
+    msg:
+      - "Включение ufw активирует все правила"
+      - "С этого момента ВСЁ, кроме SSH на порту {{ ssh_port | default(22) }}, будет заблокировано"
+      - "Это и есть Zero Trust: явно разрешено только то, что необходимо"
+  tags: firewall
+
+- name: Enable ufw (enforces Zero Trust — deny all that is not explicitly allowed)
+  community.general.ufw:
+    state: enabled
+  notify: restart ufw
+  tags: firewall
+
+- name: "[FIREWALL] ====== ИТОГО: Роль firewall завершена ======"
+  ansible.builtin.debug:
+    msg:
+      - "✓ ufw включён"
+      - "✓ Incoming: DENY (по умолчанию)"
+      - "✓ Outgoing: ALLOW (по умолчанию)"
+      - "✓ Разрешён только SSH (порт {{ ssh_port | default(22) }})"
+      - "✓ Концепция Zero Trust реализована"
+  tags: firewall
