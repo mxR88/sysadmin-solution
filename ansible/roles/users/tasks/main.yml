@@ -96,7 +96,7 @@
   ansible.builtin.authorized_key:
     user: admin-user
     state: present
-    key: "{{ lookup('file', 'files/admin-key.pub') }}"
+    key: "{{ lookup('file', role_path + '/files/admin-key.pub') }}"
   when: admin_key_stat.stat.exists
   tags: users
 
@@ -104,7 +104,7 @@
   ansible.builtin.authorized_key:
     user: deploy-user
     state: present
-    key: "{{ lookup('file', 'files/deploy-key.pub') }}"
+    key: "{{ lookup('file', role_path + '/files/deploy-key.pub') }}"
   when: deploy_key_stat.stat.exists
   tags: users
 
