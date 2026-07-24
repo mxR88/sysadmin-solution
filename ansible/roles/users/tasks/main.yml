@@ -69,7 +69,11 @@
 
 - name: "[USERS] Проверка наличия SSH-ключей"
   ansible.builtin.debug:
-    msg: "Проверяем, существуют ли файлы admin-key.pub и deploy-key.pub в roles/users/files/"
+    msg:
+      - "role_path = {{ role_path | default('UNDEFINED') }}"
+      - "Проверяем пути:"
+      - "  {{ role_path }}/files/admin-key.pub"
+      - "  {{ role_path }}/files/deploy-key.pub"
   tags: users
 
 - name: Check if admin-user SSH public key exists
@@ -84,7 +88,12 @@
   register: deploy_key_stat
   tags: users
 
-- name: "[USERS] Установка публичных ключей"
+- name: "[USERS] Результат проверки ключей"
+  ansible.builtin.debug:
+    msg:
+      - "admin-key.pub exists: {{ admin_key_stat.stat.exists | default('UNKNOWN') }}"
+      - "deploy-key.pub exists: {{ deploy_key_stat.stat.exists | default('UNKNOWN') }}"
+  tags: users
   ansible.builtin.debug:
     msg:
       - "Если ключи найдены — они будут добавлены в ~/.ssh/authorized_keys"
