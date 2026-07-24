@@ -4,7 +4,7 @@
 bash gen_ssh_keys.sh
 
 # 2. Запустить плейбук (настройка SSH + фаервол + пользователи), затем контейнеры
-cd ansible && sudo ansible-playbook playbook.yml && cd .. && docker compose up
+cd ansible && sudo ansible-playbook playbook.yml && cd .. && sudo docker compose up
 ```
 
 ## Смена порта SSH
