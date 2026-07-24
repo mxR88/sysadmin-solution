@@ -8,8 +8,10 @@ services:
       POSTGRES_USER: app_user
       POSTGRES_PASSWORD: changeme_secure_password_123
       POSTGRES_DB: app_db
-    ports:
-      - "127.0.0.1:5432:5432"  # Listen only on localhost
+    expose:
+      - "5432"
+    # ports:
+      # - "127.0.0.1:5432:5432"  # Listen only on localhost
       # Должно быть доступно только веб-серверу
       # (поэтому можно использовал внутреннюю сеть докера с именами контейнеров вместо доменов)
     volumes:
@@ -40,7 +42,7 @@ services:
       retries: 3
 
   apache:
-    image: php:8.3-apache
+    build: ./apache
     container_name: apache_app
     restart: unless-stopped
     expose:
