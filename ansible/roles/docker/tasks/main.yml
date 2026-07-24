@@ -1,0 +1,54 @@
+---
+- name: "[DOCKER] ====== НАЧАЛО: Роль docker ======"
+  ansible.builtin.debug:
+    msg:
+      - "Цель: установить Docker Engine и Docker Compose plugin"
+      - "Пользователь admin-user будет добавлен в группу docker"
+  tags: docker
+
+- name: "[DOCKER] Установка пакетов docker.io и docker-compose-plugin"
+  ansible.builtin.debug:
+    msg: "Выполняется apt install docker.io docker-compose-plugin — движок контейнеров и плагин Compose v2"
+  tags: docker
+
+- name: Ensure Docker is installed
+  ansible.builtin.apt:
+    name:
+      - docker.io
+      - docker-compose-plugin
+    state: present
+    update_cache: true
+  tags: docker
+
+- name: "[DOCKER] Запуск и добавление в автозагрузку"
+  ansible.builtin.debug:
+    msg: "Включаем dockerd через systemd, чтобы контейнеры стартовали при загрузке"
+  tags: docker
+
+- name: Start and enable docker service
+  ansible.builtin.systemd:
+    name: docker
+    state: started
+    enabled: true
+  tags: docker
+
+- name: "[DOCKER] Добавление admin-user в группу docker"
+  ansible.builtin.debug:
+    msg: "admin-user сможет запускать docker без sudo (потребуется перелогин)"
+  tags: docker
+
+- name: Add admin-user to docker group
+  ansible.builtin.user:
+    name: admin-user
+    groups: docker
+    append: true
+  tags: docker
+
+- name: "[DOCKER] ====== ИТОГО: Роль docker завершена ======"
+  ansible.builtin.debug:
+    msg:
+      - "✓ docker.io установлен"
+      - "✓ docker-compose-plugin установлен"
+      - "✓ docker service запущен и добавлен в автозагрузку"
+      - "✓ admin-user добавлен в группу docker"
+  tags: docker

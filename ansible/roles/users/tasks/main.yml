@@ -2,17 +2,7 @@
 - name: "[USERS] ====== НАЧАЛО: Роль users ======"
   ansible.builtin.debug:
     msg:
-      - "Цель: создать admin-user (с sudo) и deploy-user, настроить ключи"
-      - "Оба пользователя смогут входить только по SSH-ключу (настроено в ssh-hardening)"
-  tags: users
-
-- name: "[USERS] Создание пользователя admin-user"
-  ansible.builtin.debug:
-    msg:
-      - "Создаётся пользователь admin-user"
-      - "  • shell: /bin/bash"
-      - "  • группы: sudo (будет иметь права администратора)"
-      - "  • домашняя директория: /home/admin-user"
+      - "Цель: создать admin-user (с sudo) и deploy-user, установить SSH-ключи"
   tags: users
 
 - name: Ensure admin-user exists
@@ -25,15 +15,6 @@
     create_home: true
   tags: users
 
-- name: "[USERS] Создание пользователя deploy-user"
-  ansible.builtin.debug:
-    msg:
-      - "Создаётся пользователь deploy-user"
-      - "  • shell: /bin/bash"
-      - "  • без группы sudo (только деплой)"
-      - "  • домашняя директория: /home/deploy-user"
-  tags: users
-
 - name: Ensure deploy-user exists
   ansible.builtin.user:
     name: deploy-user
@@ -42,66 +23,23 @@
     create_home: true
   tags: users
 
-- name: "[USERS] Создание ~/.ssh директорий"
-  ansible.builtin.debug:
-    msg:
-      - "Создаются директории /home/admin-user/.ssh и /home/deploy-user/.ssh"
-      - "Права: 0700 (только владелец имеет доступ)"
-  tags: users
-
-- name: Create .ssh directory for admin-user
+- name: Create .ssh directories
   ansible.builtin.file:
-    path: /home/admin-user/.ssh
+    path: "{{ item.path }}"
     state: directory
-    owner: admin-user
-    group: admin-user
+    owner: "{{ item.owner }}"
+    group: "{{ item.owner }}"
     mode: "0700"
+  loop:
+    - { path: /home/admin-user/.ssh, owner: admin-user }
+    - { path: /home/deploy-user/.ssh, owner: deploy-user }
   tags: users
-
-- name: Create .ssh directory for deploy-user
-  ansible.builtin.file:
-    path: /home/deploy-user/.ssh
-    state: directory
-    owner: deploy-user
-    group: deploy-user
-    mode: "0700"
-  tags: users
-
-- name: "[USERS] Проверка наличия SSH-ключей"
-  ansible.builtin.debug:
-    msg:
-      - "role_path = {{ role_path | default('UNDEFINED') }}"
-      - "Проверяем пути:"
-      - "  {{ role_path }}/files/admin-key.pub"
-      - "  {{ role_path }}/files/deploy-key.pub"
-  tags: users
-
-- name: Check if admin-user SSH public key exists
-  ansible.builtin.stat:
-    path: "{{ role_path }}/files/admin-key.pub"
-  register: admin_key_stat
-  tags: users
-
-- name: Check if deploy-user SSH public key exists
-  ansible.builtin.stat:
-    path: "{{ role_path }}/files/deploy-key.pub"
-  register: deploy_key_stat
-  tags: users
-
-- name: "[USERS] Результат проверки ключей"
-  ansible.builtin.debug:
-    msg:
-      - "admin-key.pub exists: {{ admin_key_stat.stat.exists | default('UNKNOWN') }}"
-      - "deploy-key.pub exists: {{ deploy_key_stat.stat.exists | default('UNKNOWN') }}"
-  tags: users
-  when: admin_key_stat.stat.exists or deploy_key_stat.stat.exists
 
 - name: Install SSH public key for admin-user
   ansible.builtin.authorized_key:
     user: admin-user
     state: present
     key: "{{ lookup('file', role_path + '/files/admin-key.pub') }}"
-  when: admin_key_stat.stat.exists
   tags: users
 
 - name: Install SSH public key for deploy-user
@@ -109,38 +47,9 @@
     user: deploy-user
     state: present
     key: "{{ lookup('file', role_path + '/files/deploy-key.pub') }}"
-  when: deploy_key_stat.stat.exists
   tags: users
 
-# - name: "[USERS] ПРЕДУПРЕЖДЕНИЕ: admin-key.pub не найден"
-#   ansible.builtin.debug:
-#     msg:
-#       - "⚠ Файл admin-key.pub не найден!"
-#       - "Сгенерируйте ключи вручную:"
-#       - "  ssh-keygen -t ed25519 -f roles/users/files/admin-key -N '' -C 'admin-user@$(hostname)'"
-#       - "После этого запустите плейбук снова."
-#   when: not admin_key_stat.stat.exists
-#   tags: users
-
-# - name: "[USERS] ПРЕДУПРЕЖДЕНИЕ: deploy-key.pub не найден"
-#   ansible.builtin.debug:
-#     msg:
-#       - "⚠ Файл deploy-key.pub не найден!"
-#       - "Сгенерируйте ключи вручную:"
-#       - "  ssh-keygen -t ed25519 -f roles/users/files/deploy-key -N '' -C 'deploy-user@$(hostname)'"
-#       - "После этого запустите плейбук снова."
-#   when: not deploy_key_stat.stat.exists
-#   tags: users
-
-- name: "[USERS] Настройка sudo для admin-user"
-  ansible.builtin.debug:
-    msg:
-      - "Добавляем правило sudoers: admin-user может выполнять любые команды без пароля"
-      - "Файл: /etc/sudoers.d/admin-user"
-      - "Валидируется через visudo перед сохранением"
-  tags: users
-
-- name: Ensure no password-based sudo for admin-user (key-only)
+- name: Configure passwordless sudo for admin-user
   ansible.builtin.copy:
     dest: /etc/sudoers.d/admin-user
     content: "admin-user ALL=(ALL) NOPASSWD:ALL\n"
@@ -153,8 +62,7 @@
 - name: "[USERS] ====== ИТОГО: Роль users завершена ======"
   ansible.builtin.debug:
     msg:
-      - "✓ admin-user создан (группа sudo, ключ: {{ 'установлен' if admin_key_stat.stat.exists else 'НЕ УСТАНОВЛЕН' }})"
-      - "✓ deploy-user создан (без sudo, ключ: {{ 'установлен' if deploy_key_stat.stat.exists else 'НЕ УСТАНОВЛЕН' }})"
+      - "✓ admin-user создан (группа sudo, ключ установлен)"
+      - "✓ deploy-user создан (ключ установлен)"
       - "✓ sudoers настроен для admin-user"
-      - "✓ Вход по паролю отключён на уровне SSH — ключи обязательны"
   tags: users

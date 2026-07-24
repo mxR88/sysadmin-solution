@@ -45,6 +45,8 @@
       become: true
     - role: users
       become: true
+    - role: docker
+      become: true
 
   post_tasks:
     - name: "======================================================"
