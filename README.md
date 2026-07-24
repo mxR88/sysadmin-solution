@@ -1,9 +1,10 @@
 
 ```bash
-# 2. Установить требуемую Ansible-коллекцию
-ansible-galaxy collection install -r ansible/requirements.yml
+# 1. Сгенерировать SSH-ключи
+ssh-keygen -t ed25519 -f ansible/roles/users/files/admin-key -N "" -C "admin-user@$(hostname)"
+ssh-keygen -t ed25519 -f ansible/roles/users/files/deploy-key -N "" -C "deploy-user@$(hostname)"
 
-# 3. Запустить плейбук (настройка SSH + фаервол + пользователи), затем контейнеры
+# 2. Запустить плейбук (настройка SSH + фаервол + пользователи), затем контейнеры
 cd ansible && ansible-playbook playbook.yml --ask-become-pass && cd .. && docker compose up
 ```
 
