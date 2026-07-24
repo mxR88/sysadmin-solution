@@ -1,11 +1,10 @@
 
 ```bash
 # 1. Сгенерировать SSH-ключи
-ssh-keygen -t ed25519 -f ansible/roles/users/files/admin-key -N "" -C "admin-user@$(hostname)"
-ssh-keygen -t ed25519 -f ansible/roles/users/files/deploy-key -N "" -C "deploy-user@$(hostname)"
+bash gen_ssh_keys.sh
 
 # 2. Запустить плейбук (настройка SSH + фаервол + пользователи), затем контейнеры
-cd ansible && ansible-playbook playbook.yml --ask-become-pass && cd .. && docker compose up
+cd ansible && sudo ansible-playbook playbook.yml && cd .. && docker compose up
 ```
 
 ## Смена порта SSH
@@ -30,12 +29,5 @@ ansible-playbook --syntax-check playbook.yml
 
 ```bash
 # Генерация самоподписанного сертификата для Nginx
-mkdir -p ./certs && \
-openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
-  -keyout ./certs/self-signed.key \
-  -out ./certs/self-signed.crt \
-  -subj "/C=US/ST=State/L=City/O=Organization/CN=localhost"
-
-# Генерация SSH-ключtq для admin-user и deploy-user
-ssh-keygen -t ed25519 -f ansible/roles/users/files/admin-key -N "" -C "admin-user@$(hostname)" && ssh-keygen -t ed25519 -f ansible/roles/users/files/deploy-key -N "" -C "deploy-user@$(hostname)"
+bash gen_self_signed_cert.sh
 ```
